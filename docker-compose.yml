@@ -1,0 +1,43 @@
+version: '2.1'
+
+services:
+  todo-db:
+    container_name: todo-db
+    image: mongo
+    restart: always
+    volumes:
+      - './db:/data/db'
+    healthcheck:
+      test: exit 0
+  todo-api:
+    container_name: todo-api
+    build: ./todo-api/
+    volumes:
+      - './todo-api:/usr/src/app'
+    ports:
+      - '3000:3000'
+    environment:
+      - NODE_ENV=development
+      - DATABASE_URL=mongodb://todo-db:27017/todo
+    restart: always
+    depends_on:
+      todo-db:
+        condition: service_healthy
+    links:
+      - todo-db
+  todo-frontend:
+    container_name: todo-frontend
+    build: ./todo-frontend
+    volumes:
+      - './todo-frontend:/usr/src/app'
+    ports:
+      - '4000:4000'
+    environment:
+      - NODE_ENV=development
+      - CHOKIDAR_USEPOLLING=true
+    depends_on:
+      todo-api:
+        condition: service_started
+    links:
+      - todo-api
+    tty: true
